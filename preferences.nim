@@ -23,10 +23,8 @@ elif defined(macosx) or defined(ios):
     proc loadPrefs(): JsonNode =
         var prefsJsonString: cstring
         {.emit: """
-        CFBundleRef bundle = CFBundleGetMainBundle();
-        CFStringRef bundleId = CFBundleGetIdentifier(bundle);
-        CFStringRef jsStr = CFPreferencesCopyValue(kPrefsKey, bundleId, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-        if (jsStr != NULL) {
+        CFStringRef jsStr = CFPreferencesCopyValue(kPrefsKey, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+        if (jsStr) {
             CFIndex bufLen = CFStringGetMaximumSizeForEncoding(CFStringGetLength(jsStr), kCFStringEncodingUTF8);
             `prefsJsonString` = malloc(bufLen);
             CFStringGetCString(jsStr, `prefsJsonString`, bufLen, kCFStringEncodingUTF8);
@@ -44,11 +42,10 @@ elif defined(macosx) or defined(ios):
     proc syncPreferences*() =
         let prefsJsonString : cstring = $prefs
         {.emit: """
-        CFBundleRef bundle = CFBundleGetMainBundle();
-        CFStringRef bundleId = CFBundleGetIdentifier(bundle);
         CFStringRef jsStr = CFStringCreateWithCString(kCFAllocatorDefault, `prefsJsonString`, kCFStringEncodingUTF8);
-        if (jsStr != NULL) {
-            CFPreferencesSetValue(kPrefsKey, jsStr, bundleId, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+        if (jsStr) {
+            CFPreferencesSetValue(kPrefsKey, jsStr, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+            CFPreferencesSynchronize(kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
             CFRelease(jsStr);
         }
         """.}
