@@ -1,14 +1,36 @@
 import json
-
 var prefs: JsonNode
 
 when defined(android):
-    import jnim
+    import posix, os, strutils
 
-    proc loadPrefs(): JsonNode = newJObject()
+    proc prefsFile(): string =
+        var f {.global.}: string
+        if f.isNil:
+            var pkgName = readFile("/proc/" & $getpid() & "/cmdline")
+            var i = 0
+            while i < pkgName.len:
+                if not (pkgName[i].isAlphaNumeric or pkgName[i] == '.'):
+                    break
+                inc i
+            pkgName.setLen(i)
+            let prefsDir = "/data/data/" & pkgName & "/shared_prefs"
+            f = prefsDir & "/preferences.json"
+        result = f
+
+    proc loadPrefs(): JsonNode =
+        let f = prefsFile()
+        if fileExists(f):
+            result = parseFile(f)
+        else:
+            result = newJObject()
 
     proc syncPreferences*() =
-        discard
+        if not prefs.isNil:
+            let f = prefsFile()
+            createDir(parentDir(f))
+            writeFile(f, $prefs)
+
 elif defined(js):
     proc loadPrefs(): JsonNode =
         var s: cstring
@@ -23,12 +45,13 @@ elif defined(js):
             result = parseJson($s)
 
     proc syncPreferences*() =
-        let s : cstring = $prefs
-        {.emit: """
-        if(typeof(Storage) !== 'undefined') {
-            window.localStorage['__nimapp_prefs'] = `s`;
-        }
-        """.}
+        if not prefs.isNil:
+            let s : cstring = $prefs
+            {.emit: """
+            if(typeof(Storage) !== 'undefined') {
+                window.localStorage['__nimapp_prefs'] = `s`;
+            }
+            """.}
 
 elif defined(macosx) or defined(ios):
     {.emit: """
@@ -56,15 +79,16 @@ elif defined(macosx) or defined(ios):
         """.}
 
     proc syncPreferences*() =
-        let prefsJsonString : cstring = $prefs
-        {.emit: """
-        CFStringRef jsStr = CFStringCreateWithCString(kCFAllocatorDefault, `prefsJsonString`, kCFStringEncodingUTF8);
-        if (jsStr) {
-            CFPreferencesSetValue(kPrefsKey, jsStr, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-            CFPreferencesSynchronize(kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-            CFRelease(jsStr);
-        }
-        """.}
+        if not prefs.isNil:
+            let prefsJsonString : cstring = $prefs
+            {.emit: """
+            CFStringRef jsStr = CFStringCreateWithCString(kCFAllocatorDefault, `prefsJsonString`, kCFStringEncodingUTF8);
+            if (jsStr) {
+                CFPreferencesSetValue(kPrefsKey, jsStr, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+                CFPreferencesSynchronize(kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+                CFRelease(jsStr);
+            }
+            """.}
 else:
     proc loadPrefs(): JsonNode = newJObject()
 
