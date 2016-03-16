@@ -10,10 +10,26 @@ when defined(android):
     proc syncPreferences*() =
         discard
 elif defined(js):
-    proc loadPrefs(): JsonNode = newJObject()
+    proc loadPrefs(): JsonNode =
+        var s: cstring
+        {.emit: """
+        if(typeof(Storage) !== 'undefined') {
+            `s` = window.localStorage['__nimapp_prefs'];
+        }
+        """.}
+        if s.isNil:
+            result = newJObject()
+        else:
+            result = parseJson($s)
 
     proc syncPreferences*() =
-        discard
+        let s : cstring = $prefs
+        {.emit: """
+        if(typeof(Storage) !== 'undefined') {
+            window.localStorage['__nimapp_prefs'] = `s`;
+        }
+        """.}
+
 elif defined(macosx) or defined(ios):
     {.emit: """
     #include <CoreFoundation/CoreFoundation.h>
