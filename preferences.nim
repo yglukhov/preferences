@@ -36,7 +36,10 @@ elif defined(js):
         var s: cstring
         {.emit: """
         if(typeof(Storage) !== 'undefined') {
-            `s` = window.localStorage['__nimapp_prefs'];
+            var p = window.localStorage['__nimapp_prefs'];
+            if (p !== undefined) {
+                `s` = p;
+            }
         }
         """.}
         if s.isNil:
