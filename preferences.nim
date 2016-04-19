@@ -93,10 +93,30 @@ elif defined(macosx) or defined(ios):
             }
             """.}
 else:
-    proc loadPrefs(): JsonNode = newJObject()
+    import os
+
+    const prefsFileName = getEnv("PREFS_FILE_NAME")
+    when prefsFileName == "":
+        {.error: "PREFS_FILE_NAME environment variable is not defined. Run nim with --putenv:PREFS_FILE_NAME=<value> option".}
+
+    proc prefsFile(): string =
+        when defined(windows):
+            result = getEnv("APPDATA") / prefsFileName
+        else:
+            result = expandTilde("~" / prefsFileName)
+
+    proc loadPrefs(): JsonNode =
+        let f = prefsFile()
+        if fileExists(f):
+            result = parseFile(f)
+        else:
+            result = newJObject()
 
     proc syncPreferences*() =
-        discard
+        if not prefs.isNil:
+            let f = prefsFile()
+            createDir(parentDir(f))
+            writeFile(f, $prefs)
 
 proc sharedPreferences*(): JsonNode =
     if prefs.isNil:
