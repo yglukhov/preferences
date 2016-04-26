@@ -52,7 +52,12 @@ elif defined(js):
             let s : cstring = $prefs
             {.emit: """
             if(typeof(Storage) !== 'undefined') {
-                window.localStorage['__nimapp_prefs'] = `s`;
+                try {
+                    window.localStorage['__nimapp_prefs'] = `s`;
+                }
+                catch(e) {
+                    console.log("WARNING: Could not store preferences: ", e);
+                }
             }
             """.}
 
