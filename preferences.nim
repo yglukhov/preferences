@@ -35,12 +35,15 @@ elif defined(js):
     proc loadPrefs(): JsonNode =
         var s: cstring
         {.emit: """
-        if(typeof(Storage) !== 'undefined') {
-            var p = window.localStorage['__nimapp_prefs'];
-            if (p !== undefined) {
-                `s` = p;
+        try {
+            if(typeof(Storage) !== 'undefined') {
+                var p = window.localStorage['__nimapp_prefs'];
+                if (p !== undefined) {
+                    `s` = p;
+                }
             }
         }
+        catch(e) {}
         """.}
         if s.isNil:
             result = newJObject()
