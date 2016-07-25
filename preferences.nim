@@ -64,6 +64,44 @@ elif defined(js):
             }
             """.}
 
+elif defined(emscripten):
+    import emscripten
+
+    proc c_free(p: pointer) {.importc: "free".}
+
+    proc loadPrefs(): JsonNode =
+        let si = EM_ASM_INT("""
+        try {
+            if(typeof(Storage) !== 'undefined') {
+                var p = window.localStorage['__nimapp_prefs'];
+                if (p !== undefined) {
+                    return allocate(intArrayFromString(p), 'i8', ALLOC_NORMAL);
+                }
+            }
+        }
+        catch(e) {}
+        """)
+        let s = cast[cstring](si)
+        if s.isNil:
+            result = newJObject()
+        else:
+            result = parseJson($s)
+        c_free(s)
+
+    proc syncPreferences*() =
+        if not prefs.isNil:
+            let s : cstring = $prefs
+            discard EM_ASM_INT("""
+            if(typeof(Storage) !== 'undefined') {
+                try {
+                    window.localStorage['__nimapp_prefs'] = UTF8ToString($0);
+                }
+                catch(e) {
+                    console.log("WARNING: Could not store preferences: ", e);
+                }
+            }
+            """, s)
+
 elif defined(macosx) or defined(ios):
     {.emit: """
     #include <CoreFoundation/CoreFoundation.h>
