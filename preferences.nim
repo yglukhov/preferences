@@ -65,7 +65,7 @@ elif defined(js):
             """.}
 
 elif defined(emscripten):
-    import emscripten
+    import jsbind.emscripten
 
     proc c_free(p: pointer) {.importc: "free".}
 
