@@ -142,10 +142,13 @@ else:
     import os
 
     const prefsFileName = getEnv("PREFS_FILE_NAME")
-    when prefsFileName == "":
-        {.error: "PREFS_FILE_NAME environment variable is not defined. Run nim with --putenv:PREFS_FILE_NAME=<value> option".}
+    when prefsFileName.len == 0:
+        static:
+            echo "PREFS_FILE_NAME environment variable is not defined. Run nim with --putenv:PREFS_FILE_NAME=<value> option"
 
     proc prefsFile(): string =
+        when prefsFileName.len == 0:
+            let prefsFileName = splitFile(getAppFilename()).name
         when defined(windows):
             result = getEnv("APPDATA") / prefsFileName
         else:
