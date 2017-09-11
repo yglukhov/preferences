@@ -59,7 +59,7 @@ elif defined(js):
                     window.localStorage['__nimapp_prefs'] = `s`;
                 }
                 catch(e) {
-                    console.log("WARNING: Could not store preferences: ", e);
+                    console.warn("Could not store preferences: ", e);
                 }
             }
             """.}
@@ -97,7 +97,7 @@ elif defined(emscripten):
                     window.localStorage['__nimapp_prefs'] = UTF8ToString($0);
                 }
                 catch(e) {
-                    console.log("WARNING: Could not store preferences: ", e);
+                    console.warn("Could not store preferences: ", e);
                 }
             }
             """, s)
