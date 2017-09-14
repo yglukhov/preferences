@@ -36,9 +36,9 @@ elif defined(js):
         var s: cstring
         {.emit: """
         try {
-            if(typeof(Storage) !== 'undefined') {
+            if (typeof(Storage) !== 'undefined') {
                 var p = window.localStorage['__nimapp_prefs'];
-                if (p !== undefined) {
+                if (typeof(p) === 'string') {
                     `s` = p;
                 }
             }
@@ -48,7 +48,10 @@ elif defined(js):
         if s.isNil:
             result = newJObject()
         else:
-            result = parseJson($s)
+            try:
+                result = parseJson($s)
+            except:
+                result = newJObject()
 
     proc syncPreferences*() =
         if not prefs.isNil:
@@ -72,21 +75,25 @@ elif defined(emscripten):
     proc loadPrefs(): JsonNode =
         let si = EM_ASM_INT("""
         try {
-            if(typeof(Storage) !== 'undefined') {
+            if (typeof(Storage) !== 'undefined') {
                 var p = window.localStorage['__nimapp_prefs'];
-                if (p !== undefined) {
+                if (typeof(p) === 'string') {
                     return allocate(intArrayFromString(p), 'i8', ALLOC_NORMAL);
                 }
             }
         }
         catch(e) {}
+        return 0;
         """)
         let s = cast[cstring](si)
         if s.isNil:
             result = newJObject()
         else:
-            result = parseJson($s)
-        c_free(s)
+            try:
+                result = parseJson($s)
+            except:
+                result = newJObject()
+            c_free(s)
 
     proc syncPreferences*() =
         if not prefs.isNil:
