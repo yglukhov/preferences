@@ -2,20 +2,13 @@ import json
 var prefs: JsonNode
 
 when defined(android):
-    import posix, os, strutils
+    import os
+    import android.extras.pathutils
 
     proc prefsFile(): string =
         var f {.global.}: string
         if f.isNil:
-            var pkgName = readFile("/proc/" & $getpid() & "/cmdline")
-            var i = 0
-            while i < pkgName.len:
-                if not (pkgName[i].isAlphaNumeric or pkgName[i] == '.'):
-                    break
-                inc i
-            pkgName.setLen(i)
-            let prefsDir = "/data/data/" & pkgName & "/shared_prefs"
-            f = prefsDir & "/preferences.json"
+            f = appPreferencesDir() & "/preferences.json"
         result = f
 
     proc loadPrefs(): JsonNode =

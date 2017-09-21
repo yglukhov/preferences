@@ -5,3 +5,4 @@ description   = "Cross-platform user preferences for Nim"
 license       = "MIT"
 
 requires "jsbind"
+requires "https://github.com/yglukhov/android"
