@@ -14,7 +14,7 @@ when defined(android):
     proc loadPrefs(): JsonNode =
         let f = prefsFile()
         if fileExists(f):
-            result = parseFile(f)
+            result = try: parseFile(f) except: newJObject()
         else:
             result = newJObject()
 
@@ -120,7 +120,7 @@ elif defined(macosx) or defined(ios):
         }
         """.}
         if not prefsJsonString.isNil:
-            result = parseJson($prefsJsonString)
+            result = try: parseFile($prefsJsonString) except: newJObject()
         else:
             result = newJObject()
         {.emit:"""
@@ -157,7 +157,7 @@ else:
     proc loadPrefs(): JsonNode =
         let f = prefsFile()
         if fileExists(f):
-            result = parseFile(f)
+            result = try: parseFile(f) except: newJObject()
         else:
             result = newJObject()
 
