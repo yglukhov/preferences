@@ -169,5 +169,5 @@ else:
 
 proc sharedPreferences*(): JsonNode =
     if prefs.isNil:
-        prefs = loadPrefs()
+        prefs = try: loadPrefs() except: newJObject()
     result = prefs
