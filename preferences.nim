@@ -2,27 +2,57 @@ import json
 var prefs: JsonNode
 
 when defined(android):
-    import os
+    import os, jnim
     import android.extras.pathutils
+    import android.app.activity
+    import android.preference.preference_manager
+    import android.content.shared_preferences
 
-    proc prefsFile(): string =
-        var f {.global.}: string
-        if f.isNil:
-            f = appPreferencesDir() & "/preferences.json"
-        result = f
+    const migrateFromDeprecatedPrefsFile = true
 
-    proc loadPrefs(): JsonNode =
-        let f = prefsFile()
-        if fileExists(f):
-            result = parseFile(f)
+    when migrateFromDeprecatedPrefsFile:
+        proc prefsFile(): string =
+            var f {.global.}: string
+            if f.isNil:
+                f = appPreferencesDir() & "/preferences.json"
+            result = f
+
+    proc savePrefsToSharedPrefs(j: JsonNode) =
+        let sp = PreferenceManager.getDefaultSharedPreferences(currentActivity())
+        let e = sp.edit()
+        var p = ""
+        toUgly(p, j)
+        e.putString("__nimapp_prefs", p).apply()
+
+    proc loadPrefsFromSharedPrefs(): JsonNode =
+        let sp = PreferenceManager.getDefaultSharedPreferences(currentActivity())
+        let s = sp.getString("__nimapp_prefs", "")
+        if s.len != 0:
+            try:
+                result = parseJson(s)
+            except:
+                result = newJObject()
         else:
             result = newJObject()
 
+    proc loadPrefs(): JsonNode =
+        when migrateFromDeprecatedPrefsFile:
+            let f = prefsFile()
+            if fileExists(f):
+                try:
+                    result = parseFile(f)
+                    savePrefsToSharedPrefs(result)
+                except:
+                    result = newJObject()
+                removeFile(f)
+            else:
+                result = loadPrefsFromSharedPrefs()
+        else:
+            result = loadPrefsFromSharedPrefs()
+
     proc syncPreferences*() =
         if not prefs.isNil:
-            let f = prefsFile()
-            createDir(parentDir(f))
-            writeFile(f, $prefs)
+            savePrefsToSharedPrefs(prefs)
 
 elif defined(js):
     proc loadPrefs(): JsonNode =
