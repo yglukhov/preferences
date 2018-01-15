@@ -37,15 +37,21 @@ when defined(android):
 
     proc loadPrefs(): JsonNode =
         when migrateFromDeprecatedPrefsFile:
-            let f = prefsFile()
-            if fileExists(f):
-                try:
-                    result = parseFile(f)
-                    savePrefsToSharedPrefs(result)
-                except:
-                    result = newJObject()
-                removeFile(f)
-            else:
+            var prefsRead = false
+            try:
+                let f = prefsFile()
+                if fileExists(f):
+                    try:
+                        result = parseFile(f)
+                        savePrefsToSharedPrefs(result)
+                        prefsRead = true
+                    except:
+                        discard
+                    removeFile(f)
+            except:
+                discard
+
+            if not prefsRead:
                 result = loadPrefsFromSharedPrefs()
         else:
             result = loadPrefsFromSharedPrefs()
