@@ -3,10 +3,10 @@ var prefs: JsonNode
 
 when defined(android):
     import os, jnim
-    import android.extras.pathutils
-    import android.app.activity
-    import android.preference.preference_manager
-    import android.content.shared_preferences
+    import android/extras/pathutils
+    import android/app/activity
+    import android/preference/preference_manager
+    import android/content/shared_preferences
 
     const migrateFromDeprecatedPrefsFile = true
 
@@ -97,7 +97,7 @@ elif defined(js):
             """.}
 
 elif defined(emscripten):
-    import jsbind.emscripten
+    import jsbind/emscripten
 
     proc c_free(p: pointer) {.importc: "free".}
 
