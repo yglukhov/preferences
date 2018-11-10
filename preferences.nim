@@ -8,15 +8,6 @@ when defined(android):
     import android/preference/preference_manager
     import android/content/shared_preferences
 
-    const migrateFromDeprecatedPrefsFile = true
-
-    when migrateFromDeprecatedPrefsFile:
-        proc prefsFile(): string =
-            var f {.global.}: string
-            if f.isNil:
-                f = appPreferencesDir() & "/preferences.json"
-            result = f
-
     proc savePrefsToSharedPrefs(j: JsonNode) =
         let sp = PreferenceManager.getDefaultSharedPreferences(currentActivity())
         let e = sp.edit()
@@ -36,25 +27,7 @@ when defined(android):
             result = newJObject()
 
     proc loadPrefs(): JsonNode =
-        when migrateFromDeprecatedPrefsFile:
-            var prefsRead = false
-            try:
-                let f = prefsFile()
-                if fileExists(f):
-                    try:
-                        result = parseFile(f)
-                        savePrefsToSharedPrefs(result)
-                        prefsRead = true
-                    except:
-                        discard
-                    removeFile(f)
-            except:
-                discard
-
-            if not prefsRead:
-                result = loadPrefsFromSharedPrefs()
-        else:
-            result = loadPrefsFromSharedPrefs()
+        result = loadPrefsFromSharedPrefs()
 
     proc syncPreferences*() =
         if not prefs.isNil:
