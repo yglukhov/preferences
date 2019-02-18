@@ -114,16 +114,16 @@ elif defined(emscripten):
 elif defined(macosx) or defined(ios):
     {.emit: """
     #include <CoreFoundation/CoreFoundation.h>
-    static const CFStringRef kPrefsKey = CFSTR("prefs");
+    static const CFStringRef kPrefsKey = (CFStringRef)CFSTR("prefs");
     """.}
 
     proc loadPrefs(): JsonNode =
         var prefsJsonString: cstring
         {.emit: """
-        CFStringRef jsStr = CFPreferencesCopyValue(kPrefsKey, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+        CFStringRef jsStr = (CFStringRef)CFPreferencesCopyValue(kPrefsKey, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
         if (jsStr) {
             CFIndex bufLen = CFStringGetMaximumSizeForEncoding(CFStringGetLength(jsStr), kCFStringEncodingUTF8);
-            `prefsJsonString` = malloc(bufLen);
+            `prefsJsonString` = (NCSTRING)malloc(bufLen);
             CFStringGetCString(jsStr, `prefsJsonString`, bufLen, kCFStringEncodingUTF8);
             CFRelease(jsStr);
         }
@@ -140,7 +140,7 @@ elif defined(macosx) or defined(ios):
         if not prefs.isNil:
             let prefsJsonString : cstring = $prefs
             {.emit: """
-            CFStringRef jsStr = CFStringCreateWithCString(kCFAllocatorDefault, `prefsJsonString`, kCFStringEncodingUTF8);
+            CFStringRef jsStr = (CFStringRef)CFStringCreateWithCString(kCFAllocatorDefault, `prefsJsonString`, kCFStringEncodingUTF8);
             if (jsStr) {
                 CFPreferencesSetValue(kPrefsKey, jsStr, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
                 CFPreferencesSynchronize(kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
