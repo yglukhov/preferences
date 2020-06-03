@@ -6,3 +6,5 @@ license       = "MIT"
 
 requires "jsbind"
 requires "https://github.com/yglukhov/android"
+requires "plists"
+requires "darwin"

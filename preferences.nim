@@ -112,41 +112,27 @@ elif defined(emscripten):
             """, s)
 
 elif defined(macosx) or defined(ios):
-    {.emit: """
-    #include <CoreFoundation/CoreFoundation.h>
-    static const CFStringRef kPrefsKey = (CFStringRef)CFSTR("prefs");
-    """.}
+    import plists, darwin/core_foundation
+    const prefsKey = "prefs0"
 
     proc loadPrefs(): JsonNode =
-        var prefsJsonString: cstring
-        {.emit: """
-        CFStringRef jsStr = (CFStringRef)CFPreferencesCopyValue(kPrefsKey, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-        if (jsStr) {
-            CFIndex bufLen = CFStringGetMaximumSizeForEncoding(CFStringGetLength(jsStr), kCFStringEncodingUTF8);
-            `prefsJsonString` = (NCSTRING)malloc(bufLen);
-            CFStringGetCString(jsStr, `prefsJsonString`, bufLen, kCFStringEncodingUTF8);
-            CFRelease(jsStr);
-        }
-        """.}
-        if not prefsJsonString.isNil:
-            result = parseJson($prefsJsonString)
-        else:
-            result = newJObject()
-        {.emit:"""
-        if (`prefsJsonString`) { free(`prefsJsonString`); }
-        """.}
+        let k = CFStringCreate(prefsKey)
+        let p = CFPreferencesCopyAppValue(k, kCFPreferencesCurrentApplication)
+        k.release()
+        if not p.isNil:
+            result = CFPropertyListToJson(p)
+            p.release()
+        if result.isNil: result = newJObject()
 
     proc syncPreferences*() =
         if not prefs.isNil:
-            let prefsJsonString : cstring = $prefs
-            {.emit: """
-            CFStringRef jsStr = (CFStringRef)CFStringCreateWithCString(kCFAllocatorDefault, `prefsJsonString`, kCFStringEncodingUTF8);
-            if (jsStr) {
-                CFPreferencesSetValue(kPrefsKey, jsStr, kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-                CFPreferencesSynchronize(kCFPreferencesCurrentApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-                CFRelease(jsStr);
-            }
-            """.}
+            let p = CFPropertyListCreateWithJson(prefs)
+            if not p.isNil:
+                let k = CFStringCreate(prefsKey)
+                CFPreferencesSetAppValue(k, p, kCFPreferencesCurrentApplication)
+                k.release()
+                p.release()
+                discard CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication)
 else:
     import os
 
