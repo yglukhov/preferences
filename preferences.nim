@@ -136,10 +136,18 @@ elif defined(macosx) or defined(ios):
 else:
     import os
 
-    const prefsFileName = getEnv("PREFS_FILE_NAME")
-    when prefsFileName.len == 0:
-        static:
-            echo "PREFS_FILE_NAME environment variable is not defined. Run nim with --putenv:PREFS_FILE_NAME=<value> option"
+    const preferencesFileName {.strdefine.} = ""
+    when preferencesFileName.len == 0:
+        # Try the old way
+        const prefsFileName = getEnv("PREFS_FILE_NAME")
+        when prefsFileName.len == 0:
+            static:
+                echo "PREFS_FILE_NAME environment variable is not defined. Run nim with --putenv:PREFS_FILE_NAME=<value> option"
+        else:
+            static:
+                echo "PREFS_FILE_NAME environment variable is deprecated. Run nim with -d:preferencesFileName:<value> option instead"
+    else:
+        const prefsFileName = preferencesFileName
 
     proc prefsFile(): string =
         when prefsFileName.len == 0:
